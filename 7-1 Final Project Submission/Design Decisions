@@ -1,0 +1,134 @@
+Jorge Cintron
+SNHU
+CS330
+
+Design Decisions
+
+Introduction
+
+For the final project, I had to build this 3D Scene with C++ and OpenGL to simulate a 2D image given by our assignment. I had to construct low-polygon 3D objects with textures, lighting, and a walk-around animated camera. I also made design decisions, explained the structure of my code, gave insights on the extra functionality I added and interactivity with the Scene, and used my written functions to be more modular and reusable for future programming tasks. 
+
+Development Choices for the 3D Scene
+
+3D Objects	
+
+I created several 3D objects that overlap with this 2D image, forming a monitor, a desk, a mug, a lamp, and a keyboard. I used very primitive shapes, such as boxes, cylinders, plasmas, and planes, with as few polygons as possible (to make it fast).
+
+The monitor is structured by three boxes: a box for the screen, a box for the frame, and a cylinder for the stand. It has an animating color-changing effect that cycles through six different colors (red, green, blue, yellow, magenta, and cyan) using four digital number arrays called RGB values.
+
+Code Structure and Key Functions
+
+Classes like SceneManager, ShaderManager, and ViewManager connect to the application's backbone via the design of this code. At its simplest, the classes are responsible for different parts of the scene construction, shading, and handling input, respectively. Here are some extracts from the code:
+
+Scene Manager: This is the class working on managing the Scene. It has a lot of attributes: a list of 3D geometric that it can create and a place with some parameters like A horizon, vectors to define a normal or a point, etc., and a lot of 'Texture' to assign for the geometry. a light class with a lot of parameters for the definition of the light environment (ex: some attributes for the light, like: where to place it, where to orient it, how to scale it, etc), a list of Transformation (the way to apply the projection, the position, the size, etc..) For all the 3D geometry, the attributes are set before the rendering with the method 'PutElements3D' then, we can render all the objects with the process 'RenderScene'. and we have all the necessary information to apply transformations for all the applied 'Transformation' attributes. every transformation has some essential information to be applied to the Scene he needs to be applied during the render. All this information was entered into attributes with a method called 'SetTransformations.'
+
+ShaderManager: This class handles loading and applying the vertex and fragment shaders (the programs that define how the Scene should be generated on the GPU) at runtime to allow updating of lighting and texture parameters on the fly.
+
+In the ViewManager class, the meat of the matter represents the primary camera's position and the two orthographic views. It also handles input and manages the camera's location and rotation in response to user input.
+
+SetTransformations Function
+
+The SetTransformations function scales, rotates and shifts each object in the Scene using the parameters passed to the function. It passed values for X, Y, and Z scaling factors and rotation angles and used the position coordinates to place objects at the correct coordinates in 3D space.
+
+void SceneManager::SetTransformations(
+    glm::vec3 scaleXYZ,
+    float XrotationDegrees,
+    float YrotationDegrees,
+    float ZrotationDegrees,
+    glm::vec3 positionXYZ)
+{
+    // Apply scale, rotation, and translation matrices
+    glm::mat4 modelView = glm::translate(positionXYZ) * 
+                          glm::rotate(glm::radians(XrotationDegrees), glm::vec3(1.0f, 0.0f, 0.0f)) * 
+                          glm::rotate(glm::radians(YrotationDegrees), glm::vec3(0.0f, 1.0f, 0.0f)) * 
+                          glm::rotate(glm::radians(ZrotationDegrees), glm::vec3(0.0f, 0.0f, 1.0f)) * 
+                          glm::scale(scaleXYZ);
+    m_pShaderManager->setMat4Value("model", modelView);
+}
+
+Textures
+
+I applied textures to the desk, the monitor, and the lamp. These are loaded in the CreateGLTexture function, which loads the image files and sets up the wrapping of the Texture and Texture filtering for a smooth rendering. For example, the desk has a wood texture that is tiled (an integer value) to create a realistic surface.
+
+ CreateGLTexture("C:/Users/ssjtr/Downloads/CS330Content (12)/CS330Content/Projects/7-1_FinalProjectMilestones/wood.png", "woodTexture");
+SetShaderTexture("woodTexture");
+m_basicMeshes->DrawPlaneMesh();
+
+Lighting
+
+There are two types of light sources in the Scene—a directional light and a point light. Together, the two lights were implemented using the Phong shading model, which is a graphics shading model for realistically shading and lighting objects using three different components: ambient, diffuse, and specular lighting.
+The lamp's bulb also has a pulsing effect to simulate the light of a glowing bulb; dynamically adjust the bulb's brightness by generating a sine wave function.
+
+float bulbBrightness = (sin(time) + 1.0f) / 2.0f;
+SetShaderColor(bulbColor.r * bulbBrightness, bulbColor.g * bulbBrightness, bulbColor.b * bulbBrightness, 1.0f);
+
+User Navigation in the 3D Scene
+
+Camera Movement and Key Controls
+The camera can be driven around through the world with the WASD keys to move along the X and Z axes, and with the QE keys to move along the Y axis; the mouse cursor controls the pitch and yaw of the camera, which allows you to look around the Scene; the scroll wheel of the mouse adjusts the speed of the camera to provide more control during the different forms of movement.
+
+I also added a perspective view and an orthographic view, which can be displayed by pressing the K and U keys. You can also switch between the top-down view and the side view, using the T and R keys, to obtain the scene views in different orientations.
+
+Custom Features
+
+Rotating Around the Y-Axis by Pressing the X Key: You can rotate the monitor around the Y axis by pressing the X key. You can cycled the monitors colour through a predefined set by pressing the C key.
+
+Sparkling Lights: The stars in the scene are rendered with random colors that give a sparkling effect. Each star has its color randomized upon each render loop, which creates a dynamic sparkling light effect that enhances the visual aesthetic of the scene.
+
+Continuous Steam from the Coffee Mug: The coffee mug includes a dynamic steam effect that rises continuously. The steam is simulated using small spheres that gradually rise from the mug, and when the steam particles move out of view, they are reset to create a looping, continuous steam effect. This adds a subtle but realistic touch to the scene, giving it a feeling of movement and interaction.
+
+Interactive Screen Color Change: The user can interact with the monitor's screen by pressing the X then C key to cycle through six different colors: red, green, blue, yellow, magenta, and cyan. This allows the user to dynamically change the color of the monitor, adding an extra layer of customization and engagement with the 3D scene.
+
+Shortcut Keys: + = + Camera speed-up , = - Camera slowdown . = (, . ) Mouse sensitivity (for smoother movements)
+
+Reset views: For a quick reset of the camera back to default position press R key; Top-down View press T key; Side view press K.
+
+Perspective and Orthographic Views
+The U and K keys toggle between perspective and orthographic projections. The perspective shows a sense of 3D depth, whereas the orthographic projection appears 2D and is used to inspect how components sit in relation to each other in scale.
+
+    // Reset camera position with R key
+    if (glfwGetKey(m_pWindow, GLFW_KEY_R) == GLFW_PRESS)
+    {
+        g_pCamera->Position = glm::vec3(0.5f, 5.5f, 10.0f);
+        g_pCamera->Front = glm::vec3(0.0f, -0.5f, -2.0f);
+        g_pCamera->Up = glm::vec3(0.0f, 1.0f, 0.0f);
+        std::cout << "Camera Reset to Default Position." << std::endl;
+    }
+    // Add another view for the top-down perspective with T key
+    else if (glfwGetKey(m_pWindow, GLFW_KEY_T) == GLFW_PRESS)
+    {
+        g_pCamera->Position = glm::vec3(0.0f, 15.0f, 0.0f);  // Higher Y position for top-down view
+        g_pCamera->Front = glm::vec3(0.0f, -1.0f, 0.0f);     // Look straight down
+        g_pCamera->Up = glm::vec3(0.0f, 0.0f, -1.0f);        // Adjust up vector for top-down
+        std::cout << "Camera switched to Top-Down View." << std::endl;
+    }
+    // Add another view for side view with K key
+    else if (glfwGetKey(m_pWindow, GLFW_KEY_K) == GLFW_PRESS)
+    {
+        g_pCamera->Position = glm::vec3(10.0f, 5.0f, 0.0f);  // Side view from the right side
+        g_pCamera->Front = glm::vec3(-1.0f, 0.0f, 0.0f);     // Looking toward the center
+        g_pCamera->Up = glm::vec3(0.0f, 1.0f, 0.0f);        // Standard up vector
+        std::cout << "Camera switched to Side View." << std::endl;
+    }
+    else if (glfwGetKey(m_pWindow, GLFW_KEY_U) == GLFW_PRESS)
+    {
+        g_pCamera->Position = glm::vec3(-10.0f, 5.0f, 0.0f); // Side view from the left side
+        g_pCamera->Front = glm::vec3(1.0f, 0.0f, 0.0f);      // Looking toward the center (opposite of K)
+        g_pCamera->Up = glm::vec3(0.0f, 1.0f, 0.0f);         // Standard up vector
+        std::cout << "Camera switched to Opposite Side View (Left)." << std::endl;
+    }
+
+}
+
+Custom Functions for Modularity and Organization
+To improve the code's modularity and reusability, I created several custom functions:
+ SetTransformations: These are the transformations (scaling, rotation, and translation) that 3D objects undergo to ensure they are placed and orientated correctly in the Scene.
+
+SetShaderTexture: this tells the Texture to bind to that object and will bin. When the renderer traverses the object's vertices,ure to different will be bound primitives (for the same shader) when the ren-dolor: a function that dynamically changes color, e.g., it can change the color of the monitor or assign a random color to stars in the Scene.
+
+These functions act as wrappers for the 3D rendering function, and making adjustments involves simply tinkering with the wrappers rather than the original 3D rendering function at the expense of some increased redundancy within the codebase.
+
+Conclusion
+
+The project successfully recreates the 2D image with low-polygonised objects, textures, lighting, and camera navigation. By creating the 3D Scene employing modular functions, I not only fulfilled the technical requirements but also offered some dynamic features, including the rotation of the monitor and colour changes. The deliverables meet all my audience's needs. The users can interact with the art through the pointing device and navigate through the camera's perspective.
+
